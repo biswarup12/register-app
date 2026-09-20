@@ -15,13 +15,12 @@ pipeline {
         
         stage("Checkout from SCM") {
             steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/biswarup12/register-app'
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com'
             }
         }
         
         stage('Build Application') {
             steps {
-                // Added -DskipTests because tests are executed in the next stage
                 sh "mvn clean package -DskipTests"
             }
         }
@@ -35,19 +34,27 @@ pipeline {
         stage("SonarQube Analysis") {
             steps {
                 script {
-                    // Wrapped the sh command inside the withSonarQubeEnv block
-                    withSonarQubeEnv(credentialsId: 'jenkins-sonarqube-token') { 
+                    withSonarQubeEnv(credentialsId: 'jenkins-sonarqube-token') {
                         sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.11.0.3922:sonar"
                     }
                 }
             }
         }
-        stage("Quality Gate") {
+
+        // --- ADD THIS NEW STAGE HERE ---
+        stage("Quality Gate Check") {
             steps {
                 script {
-                    waitForQualityGate abortPipeline: false ,credentialsId: 'jenkins-sonarqube-token'
+                    // Timeout prevents the pipeline from hanging forever if the webhook fails
+                    timeout(time: 10, unit: 'MINUTES') {
+                        // abortPipeline: true will FAIL the build if the Quality Gate fails
+                        def qg = waitForQualityGate(abortPipeline: true)
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to Quality Gate failure: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
-    } 
+    }
 }
