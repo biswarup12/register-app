@@ -37,7 +37,7 @@ pipeline {
                 script {
                     // Wrapped the sh command inside the withSonarQubeEnv block
                     withSonarQubeEnv(credentialsId: 'jenkins-sonarqube-token') { 
-                        sh "mvn sonar:sonar"
+                        sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.11.0.3922:sonar"
                     }
                 }
             }
