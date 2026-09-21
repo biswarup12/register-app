@@ -45,9 +45,22 @@ pipeline {
         stage("Quality Gate") {
             steps {
                 script {
-                    waitForQualityGate abortPipeline: false ,credentialsId: 'jenkins-sonarqube-token'
+                    // Wait 30 seconds before checking Quality Gate
+                    sleep time: 30, unit: 'SECONDS'
+
+                    // Wait up to 5 minutes for Quality Gate result
+                    timeout(time: 5, unit: 'MINUTES') {
+                        def qg = waitForQualityGate(
+                            abortPipeline: false,
+                            credentialsId: 'jenkins-sonarqube-token'
+                        )
+
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to Quality Gate failure: ${qg.status}"
+                        }
+                    }
                 }
             }
         }
-    } 
+    }
 }
