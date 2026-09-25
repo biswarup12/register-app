@@ -72,12 +72,23 @@ pipeline {
         stage("Build & PushDocker Image") {
             steps {
                 script {
-                    docker.withRegistry('',DOCKER_PASS) {
-                        docker_image.push("${IMAGE_TAG}")
+                    docker.withRegistry('https://index.docker.io/v1/',DOCKER_PASS) {
+                        def docker_image = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                        docker_image.push()
                         docker_image.push('latest')
                     }
                 }
             }
         }
-    }
+        post {
+            always {
+                script {
+                    sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+                    sh "docker rmi ${IMAGE_NAME}:latest || true"
+                     
+               }
+           }
+        }
+     }
 }
+    
